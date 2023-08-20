@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+//import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Todo App',
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: Colors.pinkAccent,
@@ -33,23 +34,33 @@ class MyHomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).primaryColor,
-        title: const Text("Magandang Gensan"),
+        title: const Text("Todo List 📝🔥"),
       ),
-      body: const TodoList(),
+      body: const Todos(),
     );
   }
 }
 
-class TodoList extends StatefulWidget {
-  const TodoList({super.key});
+// class TodoList extends ChangeNotifier(){
+
+// }
+
+class Todos extends StatefulWidget {
+  const Todos({super.key});
 
   @override
-  State<TodoList> createState() => _TodoListState();
+  State<Todos> createState() => _TodosState();
 }
 
-class _TodoListState extends State<TodoList> {
+class _TodosState extends State<Todos> {
+  List<String> todoList = [];
+  //todoList.add();
+
   void justprint() {
     print("eyoooo");
+    setState(() {
+      todoList.add("woaaa");
+    });
   }
 
   @override
@@ -59,12 +70,14 @@ class _TodoListState extends State<TodoList> {
       height: double.infinity,
       child: Stack(
         children: [
-          const Column(children: [
-            Text("Hayahay"),
-          ]),
+          ListView.builder(
+              itemCount: todoList.length,
+              itemBuilder: (context, index) {
+                return ListTile(title: Text(todoList[index]));
+              }),
           Positioned(
-            bottom: 10,
-            right: 10,
+            bottom: 20,
+            right: 20,
             child: IconButton(
                 onPressed: justprint,
                 icon: const Icon(
