@@ -71,7 +71,7 @@ class _TodosState extends State<Todos> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Stack(
@@ -110,7 +110,7 @@ class _TodosState extends State<Todos> {
             right: 20,
             child: IconButton(
                 onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => NotesPage())),
+                    MaterialPageRoute(builder: (context) => const NotesPage())),
                 icon: const Icon(
                   Icons.add_circle,
                   color: Colors.orange,
@@ -224,9 +224,9 @@ class NotesPage extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back_ios_new)),
             //header should be sticky and has an editable textfield(?)
             backgroundColor: Colors.black54,
-            title: SizedBox(
-              width: (MediaQuery.sizeOf(context).width / 3),
-              child: const TextField(
+            title: const SizedBox(
+              width: 300, //(MediaQuery.sizeOf(context).width / 3),
+              child: TextField(
                 cursorColor: Colors.white,
                 style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
@@ -249,7 +249,7 @@ class NotesContent extends StatefulWidget {
 }
 
 class _NotesContentState extends State<NotesContent> {
-  QuillController _controller = QuillController.basic();
+  final QuillController _controller = QuillController.basic();
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +259,8 @@ class _NotesContentState extends State<NotesContent> {
           height: 15,
         ),
         QuillToolbar.basic(
-          afterButtonPressed: () => print("toolbar pressed"),
+          color: Colors.blue[900],
+          //afterButtonPressed: () => print("toolbar pressed"),
           controller: _controller,
           //key: Key(),
         ),
