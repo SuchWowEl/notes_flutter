@@ -310,7 +310,19 @@ class Card2 extends StatelessWidget {
       ),
       // Define how the card's content should be clipped
       clipBehavior: Clip.antiAliasWithSaveLayer,
-      child: Container(
+      child: InkWell(
+        onTap: () =>
+            Navigator.push(context, MaterialPageRoute(builder: (context) {
+          var temp = NoteGiven(date: notes.date);
+          temp.setDef(Notes(
+              //id: notesDb.notesList.length,
+              title: notes.title,
+              date: notes.date,
+              content: notes.content));
+          return NotesPage(
+            noteGiven: temp,
+          );
+        })),
         // decoration: const BoxDecoration(
         //   gradient: LinearGradient(
         //     begin: Alignment.topCenter,
