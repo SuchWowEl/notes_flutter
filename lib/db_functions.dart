@@ -7,30 +7,30 @@ import 'package:path/path.dart';
 //var db;
 
 class Notes {
-  final int id;
-  final String title;
+  //final int id;
   final String date;
+  final String title;
   final content;
 
   const Notes({
-    required this.id,
-    required this.title,
+    //required this.id,
     required this.date,
+    required this.title,
     required this.content,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'title': title,
+      //'id': id,
       'date': date,
+      'title': title,
       'content': content,
     };
   }
 
   @override
   String toString() {
-    return 'Notes{id: $id, title: $title, date: $date, content: $content}';
+    return 'Notes{title: $title, date: $date, content: $content}';
   }
 }
 
@@ -39,31 +39,30 @@ class NotesDatabase {
   late List<Notes> notesList;
 
   NotesDatabase() {
+    print("database initialized");
     database = start();
   }
 
-  Future<Notes> loadNote(int index) async {
+  Future<Notes> loadNote(String index) async {
     notesList = await notes();
     for (final note in notesList) {
       print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
       print(note.toString());
       print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-      if (note.id == index) {
+      if (note.date == index) {
         print("loading a note from database... ${note}");
         return note;
       }
     }
     print("loading a wrong note from database... ${const Notes(
-      id: 696969,
-      title: "wrong",
-      date: "wrong",
-      content: "wrong",
+      title: "",
+      date: "now?",
+      content: r'[{"insert": "Anything in mind\n"}]',
     ).toString()}");
     return const Notes(
-      id: 696969,
-      title: "wrong",
-      date: "wrong",
-      content: "wrong",
+      title: "",
+      date: "now?",
+      content: r'[{"insert": "Anything in mind?\n"}]',
     );
   }
 
@@ -72,17 +71,17 @@ class NotesDatabase {
       // Set the path to the database. Note: Using the `join` function from the
       // `path` package is best practice to ensure the path is correctly
       // constructed for each platform.
-      join(await getDatabasesPath(), 'todo_flutter999.db'),
+      join(await getDatabasesPath(), 'notes_flutter.db'),
       // When the database is first created, create a table to store notes.
       onCreate: (db, version) {
         // Run the CREATE TABLE statement on the database.
         return db.execute(
-          'CREATE TABLE "Notes_Table" ( "id"	INTEGER NOT NULL UNIQUE, "title"	TEXT, "date"	TEXT, "content"	JSON, PRIMARY KEY("id" AUTOINCREMENT))',
+          'CREATE TABLE "Notes_Table" ("date"	TEXT NOT NULL UNIQUE, "title"	TEXT, "content"	TEXT NOT NULL, PRIMARY KEY("date"))',
         );
       },
       // Set the version. This executes the onCreate function and provides a
       // path to perform database upgrades and downgrades.
-      version: 2,
+      version: 1,
     );
     notesList = await notes();
     return database;
@@ -126,19 +125,20 @@ class NotesDatabase {
   }
 
   Future<List<Notes>> notes() async {
+    print("starting notes() @ functions");
     // Get a reference to the database.
     final db = await database;
 
     // Query the table for all The Notes.
-    final List<Map<String, dynamic>> maps = await db.query('Notes_Table');
+    final List<Map<String, dynamic>> maps =
+        await db.query('Notes_Table', orderBy: "date DESC");
 
     notesList = List.generate(maps.length, (i) {
-      print("@notes: [id] = ${maps[i]['id']}");
+      print("@notes: [date] = ${maps[i]['date']}");
       print(maps[i].toString());
       return Notes(
-        id: maps[i]['id'],
-        title: maps[i]['title'],
         date: maps[i]['date'],
+        title: maps[i]['title'],
         content: maps[i]['content'],
       );
     });
@@ -152,30 +152,37 @@ class NotesDatabase {
   Future<void> loadData() async {
     notesList = await notes();
     for (var note in notesList) {
-      print('ID: ${note.id}');
-      print('Title: ${note.title}');
       print('Date: ${note.date}');
+      print('Title: ${note.title}');
       print('Content: ${note.content}');
       print('---');
     }
   }
 
-  Future<void> updateNote(Notes note) async {
+  Future<void> updateNote(Notes note, String oldDate) async {
     // Get a reference to the database.
     final db = await database;
 
-    // Update the given Note.
-    await db.update(
+    print("@functions.updateNote() ${note.toString()}");
+
+    // Remove first the Note from the database.
+    await db.delete(
+      'Notes_Table',
+      // Use a `where` clause to delete a specific note.
+      where: 'date = ?',
+      // Pass the Note's id as a whereArg to prevent SQL injection.
+      whereArgs: [oldDate],
+    );
+
+    // Then insert the note with new Date
+    await db.insert(
       'Notes_Table',
       note.toMap(),
-      // Ensure that the Note has a matching id.
-      where: 'id = ?',
-      // Pass the Note's id as a whereArg to prevent SQL injection.
-      whereArgs: [note.id],
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  Future<void> deleteNote(int id) async {
+  Future<void> deleteNote(date) async {
     // Get a reference to the database.
     final db = await database;
 
@@ -183,9 +190,28 @@ class NotesDatabase {
     await db.delete(
       'Notes_Table',
       // Use a `where` clause to delete a specific note.
-      where: 'id = ?',
+      where: 'date = ?',
       // Pass the Note's id as a whereArg to prevent SQL injection.
-      whereArgs: [id],
+      whereArgs: [date],
     );
   }
 }
+
+// void waw(db) {
+//   //var db = NotesDatabase();
+//   init(db);
+// }
+
+// Future<void> init(db) async {
+//   //var db = NotesDatabase();
+//   await db.start();
+//   db.insertNotes(const Notes(
+//       date: "01/01/1999",
+//       title: "New Year's Resolution",
+//       content: r'[{"insert": "Eat more healthily and sleep early!\n"}]'));
+//   db.insertNotes(const Notes(
+//       date: "05/09/2023",
+//       title: "My Basketball Idol!",
+//       content: r'[{"insert": "KOBE!!!\n"}]'));
+//   print("done inserting");
+// }

@@ -226,9 +226,9 @@ class Todos extends StatelessWidget {
             child: IconButton(
                 onPressed: () => Navigator.push(context,
                         MaterialPageRoute(builder: (context) {
-                      var temp = NoteGiven(number: 1);
+                      var temp = NoteGiven(date: 1);
                       temp.setDef(Notes(
-                          id: notesDb.notesList.length,
+                          //id: notesDb.notesList.length,
                           title: "",
                           date: "Now",
                           content: r'[{"insert": "\n"}]'));
