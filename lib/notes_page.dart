@@ -18,7 +18,7 @@ void main() {
 class NoteGiven extends ChangeNotifier {
   late Notes def;
   late NotesDatabase database;
-  late int date;
+  late String date;
 
   NoteGiven({required this.date}) {
     print("notegiven constructor called");
@@ -76,6 +76,7 @@ class NoteGiven extends ChangeNotifier {
 
   void setDef(Notes note) {
     def = note;
+    date = note.date;
   }
 }
 
@@ -83,7 +84,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   NoteGiven temp() {
-    var temp = NoteGiven(date: 2);
+    var temp = NoteGiven(date: 2.toString());
     temp.setDefaultNotes();
     print(temp.def.toString());
     return temp;
@@ -104,7 +105,7 @@ class MyApp extends StatelessWidget {
       home: FutureProvider<NoteGiven>(
         initialData: temp(),
         create: (context) async {
-          var tempvar = NoteGiven(date: 2);
+          var tempvar = NoteGiven(date: 2.toString());
           await tempvar.fetchNote();
           print("tempvar value: ${tempvar.def.toString()}");
           return tempvar;
@@ -144,6 +145,7 @@ class NotesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     print("notesList @ NotesPage");
+    print("the date of said note is: ${noteGiven.date}");
     TextEditingController controller =
         TextEditingController(text: noteGiven.def.title);
 
