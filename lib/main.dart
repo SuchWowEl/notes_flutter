@@ -5,18 +5,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill; // hide Text;
 //import 'package:provider/provider.dart';
 //import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:flutter_conditional_rendering/flutter_conditional_rendering.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'db_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:provider/provider.dart';
 
-final noteListProvider = FutureProvider((ref) async {
+import 'db_functions.dart';
+import 'notes_page.dart';
+
+final notesDbProvider = FutureProvider<NotesDatabase>((ref) async {
+  //await init();
   print("noteDbProvider moment");
   //await Future.delayed(const Duration(seconds: 5));
   var temp = NotesDatabase();
   await temp.start();
-  return temp.notesList;
+  return temp;
 });
 
 void main() {
@@ -57,7 +61,7 @@ class MyHomePage extends StatelessWidget {
 
   // NotesDatabase temp() {
   //   var temp = NotesDatabase();
-  //   temp.notesList = [const Notes(id: 0, title: title, date: date, content: content)]
+  //   temp.notesDb = [const Notes(id: 0, title: title, date: date, content: content)]
   // }
 
   @override
@@ -106,10 +110,10 @@ class AppBody extends ConsumerWidget {
     //   ..userInteractions = true
     //   ..dismissOnTap = false;
 
-    final notesListFuture = ref.watch(noteListProvider);
-    return notesListFuture.when(data: (data) {
+    final notesDbFuture = ref.watch(notesDbProvider);
+    return notesDbFuture.when(data: (data) {
       print("successful?");
-      return Todos(notesList: data);
+      return Todos(notesDb: data);
     }, error: (err, stack) {
       print("error?");
       return const Text("Something went wrong with the database :(");
@@ -152,9 +156,9 @@ class AppBody extends ConsumerWidget {
 // }
 
 class Todos extends StatelessWidget {
-  final notesList;
+  final NotesDatabase notesDb;
 
-  const Todos({super.key, required this.notesList});
+  const Todos({super.key, required this.notesDb});
 
   @override
   Widget build(BuildContext context) {
@@ -186,25 +190,52 @@ class Todos extends StatelessWidget {
           //       notes: 'asdasd dsad dsa',
           //     ),
           //   ],
-          // ),
-          GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  childAspectRatio: 1.5, crossAxisCount: 3),
-              itemBuilder: (context, index) {
-                print("index #$index");
-                if (index < notesList.length) {
-                  return GridTile(
-                      child: Card2(
-                    notes: notesList[index],
-                  ));
-                }
+          Conditional.single(
+              context: context,
+              conditionBuilder: (BuildContext context) =>
+                  notesDb.notesList.isNotEmpty,
+              widgetBuilder: (BuildContext context) {
+                return GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                            childAspectRatio: 1.5, crossAxisCount: 3),
+                    itemBuilder: (context, index) {
+                      print("index #$index");
+                      if (index < notesDb.notesList.length) {
+                        return GridTile(
+                            child: Card2(
+                          notes: notesDb.notesList[index],
+                        ));
+                      }
+                    });
+              },
+              fallbackBuilder: (BuildContext context) {
+                return const Center(
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                      Text(
+                        "What's on your mind?",
+                        style: TextStyle(color: Colors.white70),
+                      )
+                    ]));
               }),
           Positioned(
             bottom: 20,
             right: 20,
             child: IconButton(
                 onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => const NotesPage())),
+                        MaterialPageRoute(builder: (context) {
+                      var temp = NoteGiven(number: 1);
+                      temp.setDef(Notes(
+                          id: notesDb.notesList.length,
+                          title: "",
+                          date: "Now",
+                          content: r'[{"insert": "\n"}]'));
+                      return NotesPage(
+                        noteGiven: temp,
+                      );
+                    })),
                 icon: const Icon(
                   Icons.add_circle,
                   color: Colors.orange,
@@ -276,113 +307,69 @@ class Card2 extends StatelessWidget {
       ),
       // Define how the card's content should be clipped
       clipBehavior: Clip.antiAliasWithSaveLayer,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          // Add padding around the row widget
-          Padding(
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                // Add some spacing between the title and the subtitle
-                Container(height: 5),
-                // Add a subtitle widget
-                Text(
-                  notes.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  // style: MyTextSample.body1(context)!.copyWith(
-                  //   color: Colors.grey[500],
-                  // ),
-                ),
-                // Add some spacing between the top of the card and the title
-                Container(height: 5),
-                // Add a title widget
-                Text(
-                  notes.date,
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                // Add some spacing between the subtitle and the text
-                Container(height: 10),
-                quill.QuillEditor.basic(
-                  autoFocus: false,
-                  keyboardAppearance: Brightness.dark,
-                  padding: const EdgeInsets.all(5),
-                  controller: _controller,
-                  readOnly: true, // true for
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class NotesPage extends StatelessWidget {
-  const NotesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: Theme.of(context),
-      home: Scaffold(
-        appBar: AppBar(
-            leading: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_ios_new)),
-            //header should be sticky and has an editable textfield(?)
-            backgroundColor: Colors.black54,
-            title: const SizedBox(
-              width: 300, //(MediaQuery.sizeOf(context).width / 3),
-              child: TextField(
-                cursorColor: Colors.white,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                    fillColor: Colors.lightGreen,
-                    hintStyle: TextStyle(color: Colors.white70),
-                    hintText: "Title"),
+      child: Container(
+        // decoration: const BoxDecoration(
+        //   gradient: LinearGradient(
+        //     begin: Alignment.topCenter,
+        //     end: Alignment.bottomCenter,
+        //     colors: [Colors.transparent, Colors.deepPurple],
+        //   ),
+        // ),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              // Add padding around the row widget
+              Container(height: 5),
+              // Add a subtitle widget
+              Text(
+                notes.title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                // style: MyTextSample.body1(context)!.copyWith(
+                //   color: Colors.grey[500],
+                // ),
               ),
-            )),
-        body: const NotesContent(),
-      ),
-    );
-  }
-}
-
-class NotesContent extends StatefulWidget {
-  const NotesContent({super.key});
-
-  @override
-  State<NotesContent> createState() => _NotesContentState();
-}
-
-class _NotesContentState extends State<NotesContent> {
-  final quill.QuillController _controller = quill.QuillController.basic();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: 15,
-        ),
-        quill.QuillToolbar.basic(
-          color: Colors.blue[900],
-          //afterButtonPressed: () => print("toolbar pressed"),
-          controller: _controller,
-          //key: Key(),
-        ),
-        Expanded(
-          child: quill.QuillEditor.basic(
-            keyboardAppearance: Brightness.dark,
-            padding: const EdgeInsets.all(50),
-            controller: _controller,
-            readOnly: false, // true for
+              // Add some spacing between the top of the card and the title
+              Container(height: 5),
+              // Add a title widget
+              Text(
+                notes.date,
+                style: const TextStyle(color: Colors.grey),
+              ),
+              // Add some spacing between the subtitle and the text
+              Container(height: 10),
+              Expanded(
+                child: ShaderMask(
+                  shaderCallback: (Rect rect) {
+                    return const LinearGradient(
+                      begin: Alignment.center,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.white],
+                      //set stops as par your requirement
+                      stops: [0.7, 1.0], // 50% transparent, 50% white
+                    ).createShader(rect);
+                  },
+                  blendMode: BlendMode.dstOut,
+                  child: ClipRect(
+                    child: quill.QuillEditor(
+                      focusNode: FocusNode(),
+                      scrollController: ScrollController(),
+                      expands: false,
+                      scrollable: false,
+                      autoFocus: false,
+                      padding: const EdgeInsets.all(5),
+                      controller: _controller,
+                      readOnly: true, // true for
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
