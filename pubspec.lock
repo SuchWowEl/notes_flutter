@@ -126,6 +126,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.3"
+  flutter_conditional_rendering:
+    dependency: "direct main"
+    description:
+      name: flutter_conditional_rendering
+      sha256: "5b2a201f13df89e169aa0eaf16c7d1f91a8fd2b5ea8e1e4c767eefad7c912e5d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   flutter_keyboard_visibility:
     dependency: transitive
     description:
