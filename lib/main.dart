@@ -3,6 +3,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill; // hide Text;
+//import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 //import 'package:provider/provider.dart';
 //import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_conditional_rendering/flutter_conditional_rendering.dart';
@@ -226,11 +228,12 @@ class Todos extends StatelessWidget {
             child: IconButton(
                 onPressed: () => Navigator.push(context,
                         MaterialPageRoute(builder: (context) {
-                      var temp = NoteGiven(date: 1);
+                      var temp = NoteGiven(date: "1");
                       temp.setDef(Notes(
                           //id: notesDb.notesList.length,
                           title: "",
-                          date: "Now",
+                          date:
+                              DateFormat.yMd().add_Hms().format(DateTime.now()),
                           content: r'[{"insert": "\n"}]'));
                       return NotesPage(
                         noteGiven: temp,
