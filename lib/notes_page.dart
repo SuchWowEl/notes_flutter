@@ -3,6 +3,7 @@ import 'dart:core';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:intl/intl.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:provider/provider.dart';
 import 'db_functions.dart';
@@ -58,7 +59,11 @@ class NoteGiven extends ChangeNotifier {
   void updateNotes(String title, content) {
     content = json.encode(content);
     updateNotesToDb(
-        Notes(title: title, date: "NEW!!!", content: content), def.date);
+        Notes(
+            title: title,
+            date: DateFormat.yMd().add_Hms().format(DateTime.now()),
+            content: content),
+        def.date);
   }
 
   // void printDatabase() {
