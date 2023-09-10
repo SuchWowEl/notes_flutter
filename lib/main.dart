@@ -16,13 +16,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'db_functions.dart';
 import 'notes_page.dart';
 
+final f = DateFormat('yyyy-MM-dd hh:mm');
+
+//Text(f.format(new DateTime.fromMillisecondsSinceEpoch(values[index]["start_time"]*1000)));
+
+final finalNotesDb = NotesDatabase();
+
 final notesDbProvider = FutureProvider<NotesDatabase>((ref) async {
   //await init();
   print("noteDbProvider moment");
   //await Future.delayed(const Duration(seconds: 5));
-  var temp = NotesDatabase();
-  await temp.start();
-  return temp;
+  await finalNotesDb.start();
+  return finalNotesDb;
 });
 
 void main() {
@@ -98,24 +103,85 @@ class AppBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // EasyLoading.instance
-    //   ..displayDuration = const Duration(milliseconds: 2000)
-    //   ..indicatorType = EasyLoadingIndicatorType.cubeGrid
-    //   ..loadingStyle = EasyLoadingStyle.dark
-    //   ..indicatorSize = 45.0
-    //   ..radius = 10.0
-    //   // ..progressColor = Colors.pink[300]
-    //   // ..backgroundColor = Colors.green
-    //   // ..indicatorColor = Colors.yellow
-    //   // ..textColor = Colors.yellow
-    //   ..maskColor = Colors.black87.withOpacity(0.4)
-    //   ..userInteractions = true
-    //   ..dismissOnTap = false;
-
     final notesDbFuture = ref.watch(notesDbProvider);
-    return notesDbFuture.when(data: (data) {
+    print("WIDGET REBUILD SUCCESSFUL");
+    return notesDbFuture.when(data: (notesDb) {
       print("successful?");
-      return Todos(notesDb: data);
+      return SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: Stack(
+          children: [
+            Conditional.single(
+                context: context,
+                conditionBuilder: (BuildContext context) =>
+                    notesDb.notesList.isNotEmpty,
+                widgetBuilder: (BuildContext context) {
+                  return GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                              childAspectRatio: 1.5, crossAxisCount: 3),
+                      itemBuilder: (context, index) {
+                        print("index #$index");
+                        if (index < notesDb.notesList.length) {
+                          return GridTile(
+                              child: Card2(
+                            notes: notesDb.notesList[index],
+                          ));
+                        }
+                      });
+                },
+                fallbackBuilder: (BuildContext context) {
+                  return const Center(
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                        Text(
+                          "What's on your mind?",
+                          style: TextStyle(color: Colors.white70),
+                        )
+                      ]));
+                }),
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: IconButton(
+                  onPressed: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        var temp = NoteGiven(date: "1");
+                        temp.setDef(Notes(
+                            //id: notesDb.notesList.length,
+                            title: "",
+                            date: DateFormat('yyyy-MM-dd hh:mm:ss')
+                                .format(DateTime.now()),
+                            content: r'[{"insert": "\n"}]'));
+                        return NotesPage(
+                          noteGiven: temp,
+                        );
+                      })),
+                  //  () async {
+                  //   //await notesDb.deleteAllEntries();
+
+                  //   ref.read(notesDbProvider);
+                  //   Notes temp = await notesDb.loadNote("9/8/2023 19:09:21");
+                  //   Notes newer = Notes(
+                  //       date: DateFormat('yyyy-MM-dd hh:mm:ss')
+                  //           .format(DateTime.now()),
+                  //       title: "${temp.title}d",
+                  //       content: temp.content);
+                  //   await notesDb.deleteNote("9/8/2023 18:48:15");
+                  //   await notesDb.updateNote(newer, "9/8/2023 19:09:21");
+                  //   ref.read(notesDbProvider);
+                  //},
+                  icon: const Icon(
+                    Icons.add_circle,
+                    color: Colors.orange,
+                    size: 100.0,
+                  )),
+            ),
+          ],
+        ),
+      );
     }, error: (err, stack) {
       print("error?");
       return const Text("Something went wrong with the database :(");
@@ -153,10 +219,6 @@ class AppBody extends ConsumerWidget {
   }
 }
 
-// class TodoList extends ChangeNotifier(){
-
-// }
-
 class Todos extends StatelessWidget {
   final NotesDatabase notesDb;
 
@@ -170,28 +232,6 @@ class Todos extends StatelessWidget {
       height: double.infinity,
       child: Stack(
         children: [
-          // GridView(
-          //   shrinkWrap: true,
-          //   padding: const EdgeInsets.all(10),
-          //   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          //       childAspectRatio: 1.5, crossAxisCount: 3),
-          //   scrollDirection: Axis.vertical,
-          //   //direction: Axis.horizontal,
-          //   children: const [
-          //     Card2(
-          //       notes: 'Eat Healthy ',
-          //     ),
-          //     Card2(
-          //       notes: '',
-          //     ),
-          //     Card2(
-          //       notes:
-          //           'Eat Healthy Eat Healthy Eat Healthy Eat Healthy Eat Healthy Eat Healthy Eat Healthy ',
-          //     ),
-          //     Card2(
-          //       notes: 'asdasd dsad dsa',
-          //     ),
-          //   ],
           Conditional.single(
               context: context,
               conditionBuilder: (BuildContext context) =>
@@ -226,19 +266,28 @@ class Todos extends StatelessWidget {
             bottom: 20,
             right: 20,
             child: IconButton(
-                onPressed: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (context) {
-                      var temp = NoteGiven(date: "1");
-                      temp.setDef(Notes(
-                          //id: notesDb.notesList.length,
-                          title: "",
-                          date:
-                              DateFormat.yMd().add_Hms().format(DateTime.now()),
-                          content: r'[{"insert": "\n"}]'));
-                      return NotesPage(
-                        noteGiven: temp,
-                      );
-                    })),
+                onPressed: () async {
+                  Notes temp = await notesDb.loadNote("9/8/2023 18:48:15");
+                  Notes newer = Notes(
+                      date: DateFormat.yMd().add_Hms().format(DateTime.now()),
+                      title: "${temp.title}d",
+                      content: temp.content);
+                  //await notesDb.deleteNote("9/8/2023 18:47:32");
+                  await notesDb.updateNote(newer, "9/8/2023 18:47:13");
+                },
+                // () => Navigator.push(context,
+                //         MaterialPageRoute(builder: (context) {
+                //       var temp = NoteGiven(date: "1");
+                //       temp.setDef(Notes(
+                //           //id: notesDb.notesList.length,
+                //           title: "",
+                //           date:
+                //               DateFormat.yMd().add_Hms().format(DateTime.now()),
+                //           content: r'[{"insert": "\n"}]'));
+                //       return NotesPage(
+                //         noteGiven: temp,
+                //       );
+                //     })),
                 icon: const Icon(
                   Icons.add_circle,
                   color: Colors.orange,
@@ -315,21 +364,11 @@ class Card2 extends StatelessWidget {
             Navigator.push(context, MaterialPageRoute(builder: (context) {
           var temp = NoteGiven(date: notes.date);
           temp.setDef(Notes(
-              //id: notesDb.notesList.length,
-              title: notes.title,
-              date: notes.date,
-              content: notes.content));
+              title: notes.title, date: notes.date, content: notes.content));
           return NotesPage(
             noteGiven: temp,
           );
         })),
-        // decoration: const BoxDecoration(
-        //   gradient: LinearGradient(
-        //     begin: Alignment.topCenter,
-        //     end: Alignment.bottomCenter,
-        //     colors: [Colors.transparent, Colors.deepPurple],
-        //   ),
-        // ),
         child: Padding(
           padding: const EdgeInsets.all(15),
           child: Column(
