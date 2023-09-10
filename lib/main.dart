@@ -83,7 +83,7 @@ class AppBody extends ConsumerWidget {
                 return GridView.builder(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                            childAspectRatio: 1.5, crossAxisCount: 3),
+                            childAspectRatio: 1.5, crossAxisCount: 2),
                     itemBuilder: (context, index) {
                       print("index #$index");
                       if (index < notesListProvider.length) {
@@ -204,6 +204,8 @@ class Card2 extends StatelessWidget {
                   blendMode: BlendMode.dstOut,
                   child: ClipRect(
                     child: quill.QuillEditor(
+                      enableInteractiveSelection: false,
+                      enableSelectionToolbar: false,
                       focusNode: FocusNode(),
                       scrollController: ScrollController(),
                       expands: false,
