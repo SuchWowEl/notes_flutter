@@ -9,26 +9,11 @@ import 'package:intl/intl.dart';
 //import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_conditional_rendering/flutter_conditional_rendering.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:provider/provider.dart';
 
 import 'db_functions.dart';
 import 'notes_page.dart';
-
-final f = DateFormat('yyyy-MM-dd hh:mm');
-
-//Text(f.format(new DateTime.fromMillisecondsSinceEpoch(values[index]["start_time"]*1000)));
-
-final finalNotesDb = NotesDatabase();
-
-final notesDbProvider = FutureProvider<NotesDatabase>((ref) async {
-  //await init();
-  print("noteDbProvider moment");
-  //await Future.delayed(const Duration(seconds: 5));
-  await finalNotesDb.start();
-  return finalNotesDb;
-});
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,13 +49,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
 
-  //final String title;
-
-  // NotesDatabase temp() {
-  //   var temp = NotesDatabase();
-  //   temp.notesDb = [const Notes(id: 0, title: title, date: date, content: content)]
-  // }
-
   @override
   Widget build(BuildContext context) {
     print("loaded MyHomePage");
@@ -80,153 +58,18 @@ class MyHomePage extends StatelessWidget {
         backgroundColor: Theme.of(context).primaryColor,
         title: const Text("Todo List 📝🔥"),
       ),
-      body: AppBody(),
-      // body: FutureProvider(
-      //     initialData: EasyLoading.show(
-      //         status: 'Gathering Notes...',
-      //         maskType: EasyLoadingMaskType.custom),
-      //     create: (context) async {
-      //       print("done loading");
-      //       var db = NotesDatabase();
-      //       await db.start();
-      //       //await Future.delayed(const Duration(seconds: 3));
-      //       await EasyLoading.dismiss();
-      //       return db;
-      //     },
-      //     child: const Todos()),
+      body: const AppBody(),
     );
   }
 }
 
 class AppBody extends ConsumerWidget {
-  AppBody({super.key});
+  const AppBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notesDbFuture = ref.watch(notesDbProvider);
+    final notesListProvider = ref.watch(notesProvider);
     print("WIDGET REBUILD SUCCESSFUL");
-    return notesDbFuture.when(data: (notesDb) {
-      print("successful?");
-      return SizedBox(
-        width: double.infinity,
-        height: double.infinity,
-        child: Stack(
-          children: [
-            Conditional.single(
-                context: context,
-                conditionBuilder: (BuildContext context) =>
-                    notesDb.notesList.isNotEmpty,
-                widgetBuilder: (BuildContext context) {
-                  return GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                              childAspectRatio: 1.5, crossAxisCount: 3),
-                      itemBuilder: (context, index) {
-                        print("index #$index");
-                        if (index < notesDb.notesList.length) {
-                          return GridTile(
-                              child: Card2(
-                            notes: notesDb.notesList[index],
-                          ));
-                        }
-                      });
-                },
-                fallbackBuilder: (BuildContext context) {
-                  return const Center(
-                      child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                        Text(
-                          "What's on your mind?",
-                          style: TextStyle(color: Colors.white70),
-                        )
-                      ]));
-                }),
-            Positioned(
-              bottom: 20,
-              right: 20,
-              child: IconButton(
-                  onPressed: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
-                        var temp = NoteGiven(date: "1");
-                        temp.setDef(Notes(
-                            //id: notesDb.notesList.length,
-                            title: "",
-                            date: DateFormat('yyyy-MM-dd hh:mm:ss')
-                                .format(DateTime.now()),
-                            content: r'[{"insert": "\n"}]'));
-                        return NotesPage(
-                          noteGiven: temp,
-                        );
-                      })),
-                  //  () async {
-                  //   //await notesDb.deleteAllEntries();
-
-                  //   ref.read(notesDbProvider);
-                  //   Notes temp = await notesDb.loadNote("9/8/2023 19:09:21");
-                  //   Notes newer = Notes(
-                  //       date: DateFormat('yyyy-MM-dd hh:mm:ss')
-                  //           .format(DateTime.now()),
-                  //       title: "${temp.title}d",
-                  //       content: temp.content);
-                  //   await notesDb.deleteNote("9/8/2023 18:48:15");
-                  //   await notesDb.updateNote(newer, "9/8/2023 19:09:21");
-                  //   ref.read(notesDbProvider);
-                  //},
-                  icon: const Icon(
-                    Icons.add_circle,
-                    color: Colors.orange,
-                    size: 100.0,
-                  )),
-            ),
-          ],
-        ),
-      );
-    }, error: (err, stack) {
-      print("error?");
-      return const Text("Something went wrong with the database :(");
-    }, loading: () {
-      print("eyo?");
-      return Container(
-        height: double.infinity,
-        width: double.infinity,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  color: Colors.black,
-                  height: 150,
-                  width: 150,
-                  child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SpinKitCubeGrid(
-                          color: Colors.white,
-                          size: 50,
-                        ),
-                        Text("Retrieving Notes..."),
-                      ]),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    });
-  }
-}
-
-class Todos extends StatelessWidget {
-  final NotesDatabase notesDb;
-
-  const Todos({super.key, required this.notesDb});
-
-  @override
-  Widget build(BuildContext context) {
-    print("niabot diris Todosstate");
     return SizedBox(
       width: double.infinity,
       height: double.infinity,
@@ -235,7 +78,7 @@ class Todos extends StatelessWidget {
           Conditional.single(
               context: context,
               conditionBuilder: (BuildContext context) =>
-                  notesDb.notesList.isNotEmpty,
+                  notesListProvider.isNotEmpty,
               widgetBuilder: (BuildContext context) {
                 return GridView.builder(
                     gridDelegate:
@@ -243,10 +86,10 @@ class Todos extends StatelessWidget {
                             childAspectRatio: 1.5, crossAxisCount: 3),
                     itemBuilder: (context, index) {
                       print("index #$index");
-                      if (index < notesDb.notesList.length) {
+                      if (index < notesListProvider.length) {
                         return GridTile(
                             child: Card2(
-                          notes: notesDb.notesList[index],
+                          notes: notesListProvider[index],
                         ));
                       }
                     });
@@ -266,29 +109,17 @@ class Todos extends StatelessWidget {
             bottom: 20,
             right: 20,
             child: IconButton(
-                onPressed: () async {
-                  Notes temp = await notesDb.loadNote("9/8/2023 18:48:15");
-                  Notes newer = Notes(
-                      date: DateFormat('yyyy-MM-dd hh:mm:ss')
-                          .format(DateTime.now()),
-                      title: "${temp.title}d",
-                      content: temp.content);
-                  //await notesDb.deleteNote("9/8/2023 18:47:32");
-                  await notesDb.updateNote(newer, "9/8/2023 18:47:13");
-                },
-                // () => Navigator.push(context,
-                //         MaterialPageRoute(builder: (context) {
-                //       var temp = NoteGiven(date: "1");
-                //       temp.setDef(Notes(
-                //           //id: notesDb.notesList.length,
-                //           title: "",
-                //           date:
-                //               DateFormat.yMd().add_Hms().format(DateTime.now()),
-                //           content: r'[{"insert": "\n"}]'));
-                //       return NotesPage(
-                //         noteGiven: temp,
-                //       );
-                //     })),
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => NotesPage(
+                              noteGiven: Notes(
+                                  //id: notesDb.notesList.length,
+                                  title: "",
+                                  date: DateFormat('yyyy-MM-dd hh:mm:ss')
+                                      .format(DateTime.now()),
+                                  content: r'[{"insert": "\n"}]'),
+                            ))),
                 icon: const Icon(
                   Icons.add_circle,
                   color: Colors.orange,
@@ -297,30 +128,6 @@ class Todos extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class List extends StatelessWidget {
-  const List({
-    super.key,
-    required this.todoList,
-  });
-
-  final Map todoList;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        ...todoList.keys.map((key) {
-          return ListTile(
-            tileColor: Theme.of(context).secondaryHeaderColor,
-            title: Text(key),
-            subtitle: Text(todoList[key]),
-          );
-        })
-      ],
     );
   }
 }
@@ -338,15 +145,6 @@ class Card2 extends StatelessWidget {
     return quill.QuillController(
         document: quill.Document.fromJson(stringtemp),
         selection: const TextSelection.collapsed(offset: 0));
-    // } else {
-    //   print("noteGiven is string");
-    //   final Document document = Document();
-    //   document.insert(0, "${stringtemp}");
-    //   return QuillController(
-    //     document: document,
-    //     selection: const TextSelection.collapsed(offset: 0),
-    //   );
-    // }
   }
 
   @override
@@ -361,15 +159,12 @@ class Card2 extends StatelessWidget {
       // Define how the card's content should be clipped
       clipBehavior: Clip.antiAliasWithSaveLayer,
       child: InkWell(
-        onTap: () =>
-            Navigator.push(context, MaterialPageRoute(builder: (context) {
-          var temp = NoteGiven(date: notes.date);
-          temp.setDef(Notes(
-              title: notes.title, date: notes.date, content: notes.content));
-          return NotesPage(
-            noteGiven: temp,
-          );
-        })),
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => NotesPage(
+                      noteGiven: notes,
+                    ))),
         child: Padding(
           padding: const EdgeInsets.all(15),
           child: Column(

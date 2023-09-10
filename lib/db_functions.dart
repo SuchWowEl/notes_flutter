@@ -1,11 +1,14 @@
 //import 'package:flutter/material.dart';
 //import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 //import 'package:provider/provider.dart';
 
 //var db;
 
+@immutable
 class Notes {
   //final int id;
   final String date;
@@ -195,23 +198,50 @@ class NotesDatabase {
       whereArgs: [date],
     );
   }
+
+  deleteAllEntries() async {
+    final db = await database;
+    return await db.rawDelete("DELETE FROM Notes_Table");
+  }
 }
 
-// void waw(db) {
-//   //var db = NotesDatabase();
-//   init(db);
-// }
+class NotesList extends StateNotifier<List<Notes>> {
+  final NotesDatabase database;
+  NotesList({required this.database}) : super([]);
 
-// Future<void> init(db) async {
-//   //var db = NotesDatabase();
-//   await db.start();
-//   db.insertNotes(const Notes(
-//       date: "01/01/1999",
-//       title: "New Year's Resolution",
-//       content: r'[{"insert": "Eat more healthily and sleep early!\n"}]'));
-//   db.insertNotes(const Notes(
-//       date: "05/09/2023",
-//       title: "My Basketball Idol!",
-//       content: r'[{"insert": "KOBE!!!\n"}]'));
-//   print("done inserting");
-// }
+  void initDatabase() async {
+    await database.start();
+    notes();
+  }
+
+  void notes() async {
+    state = await database.notes();
+  }
+
+  void insertNotes(Notes note) async {
+    await database.insertNotes(note);
+    notes();
+  }
+
+  void deleteNotes(String date) async {
+    await database.deleteNote(date);
+    notes();
+  }
+
+  Future<Notes> loadNote(String date) async {
+    return await database.loadNote(date);
+  }
+
+  void updateNotes(Notes note, String oldDate) async {
+    await database.updateNote(note, oldDate);
+    notes();
+  }
+}
+
+final finalNotesDb = NotesDatabase();
+
+final notesProvider = StateNotifierProvider<NotesList, List<Notes>>((ref) {
+  var temp = NotesList(database: finalNotesDb);
+  temp.initDatabase();
+  return temp;
+});

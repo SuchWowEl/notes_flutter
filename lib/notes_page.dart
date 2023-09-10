@@ -130,11 +130,11 @@ class NoteGiven {
 // }
 
 class NotesPage extends ConsumerWidget {
-  final NoteGiven noteGiven;
+  final Notes noteGiven;
   const NotesPage({super.key, required this.noteGiven});
 
   QuillController createController() {
-    var stringtemp = json.decode(noteGiven.def.content);
+    var stringtemp = json.decode(noteGiven.content);
     // if (stringtemp is List) {
     // print("noteGiven is JSON");
     print(stringtemp);
@@ -148,7 +148,7 @@ class NotesPage extends ConsumerWidget {
     print("notesList @ NotesPage");
     print("the date of said note is: ${noteGiven.date}");
     TextEditingController controller =
-        TextEditingController(text: noteGiven.def.title);
+        TextEditingController(text: noteGiven.title);
 
     QuillController quillController = createController();
 
@@ -182,19 +182,24 @@ class NotesPage extends ConsumerWidget {
                           onPressed: () {
                             var content = json.encode(
                                 quillController.document.toDelta().toJson());
-                            var note = Notes(
+                            var newNote = Notes(
                                 title: controller.text,
                                 date: DateFormat('yyyy-MM-dd hh:mm:ss')
                                     .format(DateTime.now()),
                                 content: content);
                             ref
                                 .read(notesProvider.notifier)
-                                .updateNotes(note, noteGiven.def.date);
+                                .updateNotes(newNote, noteGiven.date);
                           },
                           icon: const Icon(Icons.check)),
                       IconButton(
-                          onPressed: () =>
-                              noteGiven.deleteNote(noteGiven.def.date),
+                          onPressed: () {
+                            ref
+                                .read(notesProvider.notifier)
+                                .deleteNotes(noteGiven.date);
+                            Navigator.pop(context);
+                          },
+                          //noteGiven.deleteNote(noteGiven.def.date),
                           icon: const Icon(Icons.delete_outline)),
                     ],
                   ),
