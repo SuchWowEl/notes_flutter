@@ -269,7 +269,8 @@ class Todos extends StatelessWidget {
                 onPressed: () async {
                   Notes temp = await notesDb.loadNote("9/8/2023 18:48:15");
                   Notes newer = Notes(
-                      date: DateFormat.yMd().add_Hms().format(DateTime.now()),
+                      date: DateFormat('yyyy-MM-dd hh:mm:ss')
+                          .format(DateTime.now()),
                       title: "${temp.title}d",
                       content: temp.content);
                   //await notesDb.deleteNote("9/8/2023 18:47:32");
