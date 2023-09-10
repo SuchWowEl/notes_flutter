@@ -3,27 +3,28 @@ import 'dart:core';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+//import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:provider/provider.dart';
 import 'db_functions.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+// void main() {
+//   WidgetsFlutterBinding.ensureInitialized();
 
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
-  runApp(const MyApp());
-}
+//   sqfliteFfiInit();
+//   databaseFactory = databaseFactoryFfi;
+//   runApp(const MyApp());
+// }
 
-class NoteGiven extends ChangeNotifier {
+class NoteGiven {
   late Notes def;
   late NotesDatabase database;
   late String date;
 
   NoteGiven({required this.date}) {
     print("notegiven constructor called");
-    database = NotesDatabase();
+    database = NotesDatabase(); // require NotesDatabase next time
   }
   /* {
     date = id;
@@ -61,9 +62,13 @@ class NoteGiven extends ChangeNotifier {
     updateNotesToDb(
         Notes(
             title: title,
-            date: DateFormat.yMd().add_Hms().format(DateTime.now()),
+            date: DateFormat('yyyy-MM-dd hh:mm:ss').format(DateTime.now()),
             content: content),
         def.date);
+  }
+
+  deleteNote(String dateOfNote) async {
+    await database.deleteNote(dateOfNote);
   }
 
   // void printDatabase() {
@@ -85,46 +90,46 @@ class NoteGiven extends ChangeNotifier {
   }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
 
-  NoteGiven temp() {
-    var temp = NoteGiven(date: 2.toString());
-    temp.setDefaultNotes();
-    print(temp.def.toString());
-    return temp;
-  }
+//   NoteGiven temp() {
+//     var temp = NoteGiven(date: 2.toString());
+//     temp.setDefaultNotes();
+//     print(temp.def.toString());
+//     return temp;
+//   }
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Notes App',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        primaryColor: Colors.pinkAccent,
-        secondaryHeaderColor: const Color.fromARGB(255, 255, 23, 23),
-        //colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: FutureProvider<NoteGiven>(
-        initialData: temp(),
-        create: (context) async {
-          var tempvar = NoteGiven(date: 2.toString());
-          await tempvar.fetchNote();
-          print("tempvar value: ${tempvar.def.toString()}");
-          return tempvar;
-        },
-        child: Consumer<NoteGiven>(
-          builder: (context, noteGiven, child) =>
-              NotesPage(noteGiven: noteGiven),
-        ),
-      ),
-    );
-  }
-}
+//   // This widget is the root of your application.
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: 'Notes App',
+//       theme: ThemeData(
+//         brightness: Brightness.dark,
+//         primaryColor: Colors.pinkAccent,
+//         secondaryHeaderColor: const Color.fromARGB(255, 255, 23, 23),
+//         //colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+//         useMaterial3: true,
+//       ),
+//       home: FutureProvider<NoteGiven>(
+//         initialData: temp(),
+//         create: (context) async {
+//           var tempvar = NoteGiven(date: 2.toString());
+//           await tempvar.fetchNote();
+//           print("tempvar value: ${tempvar.def.toString()}");
+//           return tempvar;
+//         },
+//         child: Consumer<NoteGiven>(
+//           builder: (context, noteGiven, child) =>
+//               NotesPage(noteGiven: noteGiven),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
-class NotesPage extends StatelessWidget {
+class NotesPage extends ConsumerWidget {
   final NoteGiven noteGiven;
   const NotesPage({super.key, required this.noteGiven});
 
@@ -136,19 +141,10 @@ class NotesPage extends StatelessWidget {
     return QuillController(
         document: Document.fromJson(stringtemp),
         selection: const TextSelection.collapsed(offset: 0));
-    // } else {
-    //   print("noteGiven is string");
-    //   final Document document = Document();
-    //   document.insert(0, "${stringtemp}");
-    //   return QuillController(
-    //     document: document,
-    //     selection: const TextSelection.collapsed(offset: 0),
-    //   );
-    // }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     print("notesList @ NotesPage");
     print("the date of said note is: ${noteGiven.date}");
     TextEditingController controller =
@@ -161,7 +157,7 @@ class NotesPage extends StatelessWidget {
       home: Scaffold(
         appBar: AppBar(
             leading: IconButton(
-                onPressed: () => print("Wow"), //Navigator.pop(context),
+                onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.arrow_back_ios_new)),
             backgroundColor: Colors.black54,
             title: Row(
@@ -180,11 +176,28 @@ class NotesPage extends StatelessWidget {
                           hintText: "Title"),
                     ),
                   ),
-                  IconButton(
-                      //onPressed: () => print("pressed!"),
-                      onPressed: () => noteGiven.updateNotes(controller.text,
-                          quillController.document.toDelta().toJson()),
-                      icon: const Icon(Icons.check)),
+                  Row(
+                    children: [
+                      IconButton(
+                          onPressed: () {
+                            var content = json.encode(
+                                quillController.document.toDelta().toJson());
+                            var note = Notes(
+                                title: controller.text,
+                                date: DateFormat('yyyy-MM-dd hh:mm:ss')
+                                    .format(DateTime.now()),
+                                content: content);
+                            ref
+                                .read(notesProvider.notifier)
+                                .updateNotes(note, noteGiven.def.date);
+                          },
+                          icon: const Icon(Icons.check)),
+                      IconButton(
+                          onPressed: () =>
+                              noteGiven.deleteNote(noteGiven.def.date),
+                          icon: const Icon(Icons.delete_outline)),
+                    ],
+                  ),
                 ])),
         body: NotesContent(quillController: quillController),
       ),
